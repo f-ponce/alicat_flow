@@ -84,6 +84,14 @@ if __name__ == '__main__':
     
     alicat_flow_controller = AlicatFlowController(options.port, 
     'A', options.publish_rate, options.publish_name, options.subscribe_name, options.driver_version)
+
+    alicat_flow_controller.main()
     
+    time.sleep(2)
+    
+    alicat_flow_controller = AlicatFlowController(options.port, 
+    'D', options.publish_rate, options.publish_name, options.subscribe_name, options.driver_version)
+
     alicat_flow_controller.main()
 
+    

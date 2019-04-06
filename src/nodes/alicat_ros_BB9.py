@@ -8,11 +8,13 @@ import numpy as np
 from std_msgs.msg import Float32, Header, String
 from alicat_flow.msg import bb9
 import time
-
+import imp
 import alicat
+import threading
 
 class BB9AlicatFlowController:
     def __init__(self, port="/dev/ttyUSB0", addresses=['A', 'B'], publish_rate=1, publish_name_base='/alicat_flow_rate', subscribe_name='/alicat_bb9'):
+        self.lockBuffer = threading.Lock()
         self.port = port
         self.publish_rate = publish_rate
         self.addresses = addresses
@@ -21,17 +23,23 @@ class BB9AlicatFlowController:
         self.publishers = {address: rospy.Publisher(publish_name_base+'_'+address, Float32, queue_size=10) for address in addresses}
         
     def flow_control_callback(self, data):
-        for i, address in enumerate(data.address):
-            self.flow_controllers[address].set_flow_rate(data.flowrate[i])
+        with self.lockBuffer:
+            for i, address in enumerate(data.address):
+                self.flow_controllers[address].set_flow_rate(data.flowrate[i])
             
     def publish_flow_rates(self):
-        flowrate = []
-        for address in self.addresses:
-            f = self.flow_controllers[address].get()['mass_flow'] 
-            flowrate.append( f )
-            self.publishers[address].publish(f)
-        print self.addresses
-        print flowrate
+        with self.lockBuffer:
+            flowrate = []
+            for address in self.addresses:
+                try:
+                    f = self.flow_controllers[address].get()['volumetric_flow'] 
+                    flowrate.append( f )
+                    self.publishers[address].publish(f)
+                except:
+                    print 'Failed to get / publish data'
+            for addr, value in zip(self.addresses,flowrate):
+                print addr, value
+            print 
             
     def main(self):
         rate = rospy.Rate(self.publish_rate) # 10hz
@@ -46,25 +54,32 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("--port", type="str", dest="port", default="/dev/ttyUSB0",
                         help="port")
-    parser.add_option("--addresses", type="str", dest="addresses", default="['A', 'B','C', 'D', 'E', 'F']",
+    parser.add_option("--addresses", type="str", dest="addresses", default="['A', 'B', 'C','D','E', 'F']",
                         help="addresses for all of the attached flow controllers")
-    parser.add_option("--publish_rate", type="float", dest="publish_rate", default=0.1,
+    parser.add_option("--publish_rate", type="float", dest="publish_rate", default=0.5,
                         help="rate at which to publish flow rate")        
     parser.add_option("--publish_name_base", type="str", dest="publish_name_base", default='/alicat_flow_rate',
                         help="topic base name to publish under")
     parser.add_option("--subscribe_name", type="str", dest="subscribe_name", default='/alicat_bb9',
                         help="topic to subscribe to")
+    parser.add_option("--bb9_configuration", type="str", dest="bb9_configuration", default='',
+                        help="full path to a python configuration file defining all of the parameters")
 
     (options, args) = parser.parse_args()
     
-    nodename = 'alicat_flow_controller_bb9'
+    if len(options.bb9_configuration) > 0:
+        bb9_configuration = imp.load_source('bb9_configuration', options.bb9_configuration)
+        options = bb9_configuration
+    
+    nodename = 'multi_alicat_controller_bb9'
     rospy.init_node(nodename)
     
-    alicat_flow_controller_BB9 = BB9AlicatFlowController(options.port, eval(options.addresses), options.publish_rate, options.publish_name_base, options.subscribe_name)
+    multi_alicat_flow_controller_BB9 = BB9AlicatFlowController(options.port, eval(options.addresses), options.publish_rate, options.publish_name_base, options.subscribe_name)
     
-    alicat_flow_controller_BB9.main()
+    multi_alicat_flow_controller_BB9.main()
             
             
 '''
-rostopic pub /alicat_bb9 alicat_flow_control/bb9 '{address:  ['A', 'B'], flowrate: [0, 0]}'
+rostopic pub /alicat_bb9 multi_alicat_control/msg_bb9 '{addresses:  ['A', 'B', 'C'], flowrates: [20, 20, 2]}'
 '''
+

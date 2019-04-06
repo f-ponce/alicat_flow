@@ -7,7 +7,7 @@ import rosparam
 import numpy as np
 from std_msgs.msg import Float32, Header, String
 from geometry_msgs.msg import PointStamped
-from alicat_flow_control.msg import bb9
+from alicat_flow.msg import bb9
 import time
 import imp
 import message_filters
@@ -67,8 +67,8 @@ if __name__ == '__main__':
     
     (options, args) = parser.parse_args()
     
-    coupling_function_module = imp.load_source('coupling_function_module', options.coupling_function_filename)
-    coupling_function = coupling_function_module.__getattribute__(options.coupling_function_fname)
+    coupling_function_module = imp.load_source('coupling_function_module', 'alicat_ros_BB9_republisher_coupling_functions.py')
+    coupling_function = coupling_function_module.__getattribute__('coupling_function_AB_primaryflow_C_addedflow')
     
             
     BB9Synchronizer(    coupling_function, 
@@ -76,6 +76,4 @@ if __name__ == '__main__':
                         master_topic=eval(options.master_topic), 
                         slave_topic=options.slave_topic, 
                         nodename=options.nodename)
-            
-            
             

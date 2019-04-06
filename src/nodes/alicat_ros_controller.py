@@ -28,7 +28,7 @@ class AlicatFlowController:
         time.sleep(2)
         print 'go'
         
-    def main(self, flow_rate=5):
+    def main(self, flow_rate=1.99):
     
         # first pause until local time reached
         if self.first_pulse_time > 0:
@@ -69,9 +69,10 @@ if __name__ == '__main__':
                         help="pulse interval")
     parser.add_option("--pulse_length", type="int", dest="pulse_length", default=600,
                         help="pulse length")
+                        
     parser.add_option("--publish_name", type="str", dest="publish_name", default='/alicat_flow_control',
                         help="topic to publish to")
-    parser.add_option("--flow_rate", type="float", dest="flow_rate", default=5,
+    parser.add_option("--flow_rate", type="float", dest="flow_rate", default=1.8,
                         help="flow rate")
     
     (options, args) = parser.parse_args()
@@ -82,6 +83,6 @@ if __name__ == '__main__':
                                                     first_pulse_time=options.first_pulse_time,
                                                     first_pulse_delay=options.first_pulse_delay,
                                                     publish_name=options.publish_name)
-    alicat_flow_controller.main(flow_rate=options.flow_rate)
+    alicat_flow_controller.main(flow_rate=1.6)
             
             
